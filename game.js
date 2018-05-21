@@ -50,13 +50,66 @@ class Actor {
 		return this.pos.y + this.size.y;
 	}
 
-	isIntersect() {
-		
+	isIntersect(actor) {
+		if (!(actor instanceof Actor) || (actor === undefined)) {
+			throw new Error('Неверный аргумент функции.'); 
+		}
+
+		if (actor === this) return false;
+
+		if (this.left >= actor.right || this.top >= actor.bottom || this.right <= actor.left || this.bottom <= actor.top) {
+			return false;
+		} else {
+			return true;
+		}
 	}
 }
 
 class Level {
+	constructor(grid, actors) {
+		this.grid = grid;
+		this.actors = actors;
+		this.status = null;
+		this.finishDelay = 1;
+	}
 
+	get height() {
+		return this.grid ? this.grid.length : 0;
+	}
+
+	get width() {
+		if (this.grid === undefined) {
+			return 0;
+		}
+
+		let width = 0;
+		this.grid.forEach(string => {
+			if (string.length > width) {
+				width = string.length;
+			}
+		});
+
+		return width;
+	}
+
+	get player() {
+		let player;
+		this.actors.forEach(act => {
+			if (act.type === 'player') {
+				player = act;
+			}
+		});
+
+		return player;
+	}
+
+	isFinished() {
+		if (this.status !== null && this.finishDelay < 0) {
+			return true;
+		}
+
+		return false;
+	}
 }
 
 const grid = [
