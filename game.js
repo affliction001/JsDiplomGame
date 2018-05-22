@@ -110,6 +110,34 @@ class Level {
 
 		return false;
 	}
+
+	actorAt(actor) {
+		if (!(actor instanceof Actor) || actor === undefined) {
+			throw new Error('Передан неверный аргумент, либо аргумент отсутствует.');
+		}
+
+		if (this.actors) {
+			for (let item of this.actors) {
+				if (actor.isIntersect(item)) {
+					return item;
+				}
+			}
+		}
+	}
+
+	obstacleAt(nextPos, vecSize) {
+		if (!(nextPos instanceof Vector) && !(vecSize instanceof Vector)) {
+			throw new Error('Передан неверный аргумент.');
+		}
+
+		if ((nextPos.y + vecSize.y) > this.height) { return 'lava' };
+
+		if ((nextPos.y) < 0) { return 'wall' };
+
+		if (nextPos.x < 0) { return 'wall' };
+
+		if ((nextPos.x + vecSize.x) > this.width) { return 'wall' };
+	}	
 }
 
 const grid = [
