@@ -65,12 +65,12 @@ class Actor {
 			this.pos = vectorPos;
 			this.size = vectorSize;
 			this.speed = vectorSpeed;
-			this.act = function() {};
 		} else {
 			throw new Error('Передаваемый в функцию обьект не является вектором.');
 		}
 	}
 
+	act() { }
 	get type() { return 'actor'; }
 	get left() { return this.pos.x; }
 	get top() { return this.pos.y; }
@@ -382,11 +382,13 @@ class LevelParser {
 				for (let x = 0; x < plan[y].length; x++) {
 					let s = plan[y][x];
 
-					if (s in this.mapActors) {
-						if (typeof this.mapActors[s] === 'function') {
-							let obj = new this.mapActors[s](new Vector(x, y));
-							if (obj instanceof Actor) {
-								actors.push(obj);
+					if (this.mapActors) {
+						if (s in this.mapActors) {
+							if (typeof this.mapActors[s] === 'function') {
+								let obj = new this.mapActors[s](new Vector(x, y));
+								if (obj instanceof Actor) {
+									actors.push(obj);
+								}
 							}
 						}
 					}
@@ -400,8 +402,8 @@ class LevelParser {
 	// Метод `parse`:
 	//   Принимает массив строк, создает и возвращает игровое поле, заполненное препятствиями и движущимися объектами, полученными на основе символов и словаря.
 
-	parse() {
-
+	parse(plan) {
+		return new Level(this.createGrid(plan), this.createActors(plan));
 	}
 }
 
@@ -419,8 +421,12 @@ class Fireball extends Actor {
 	//   Созданный объект должен иметь свойство `type` со значением `fireball`. Это свойство только для чтения.
 	//   Также должен иметь размер `1:1` в свойстве `size`, _объект_ `Vector`.
 
-	constructor() {
+	constructor(pos = new Vector(0, 0), speed = new Vector(0, 0)) {
+		super(pos, new Vector(1, 1), speed);
+	}
 
+	get type() {
+		return 'fireball';
 	}
 
 	// Метод `getNextPosition`:
@@ -428,8 +434,8 @@ class Fireball extends Actor {
 	//   это текущая позиция плюс скорость, умноженная на время. И так по каждой из осей.
 	//   Принимает один аргумент, время, _число_. Аргумент необязательный, по умолчанию равен `1`.
 
-	getNextPosition() {
-
+	getNextPosition(time = 1) {
+		return new Vector(this.pos.x + this.speed.x * time, this.pos.y + this.speed.y * time);
 	}
 
 	// Метод `handleObstacle`:
@@ -437,7 +443,7 @@ class Fireball extends Actor {
 	//   Меняет вектор скорости на противоположный. Если он был `5:5`, то после должен стать `-5:-5`.
 
 	handleObstacle() {
-
+		this.speed = new Vector(Number('-' + this.speed.x), Number('-' + this.speed.y));
 	}
 
 	// Метод `act`:
@@ -449,8 +455,10 @@ class Fireball extends Actor {
 	//   3. Если нет, обновить текущую позицию объекта.
 	//   4. Если объект пересекается с препятствием, то необходимо обработать это событие. При этом текущее положение остается прежним.
 
-	act() {
-
+	act(time, grid) {
+		let nextPosition = this.getNextPosition(time);
+		
+		grid.obstacleAt(nextPosition, this.size) ? this.handleObstacle() : this.pos = nextPosition;
 	}
 }
 
@@ -465,8 +473,8 @@ class HorizontalFireball extends Fireball {
 	// Конструктор должен принимать один аргумент — координаты текущего положения, _объект_ `Vector`. И создавать объект размером `1:1` и скоростью, 
 	// равной `2` по оси X.
 
-	constructor() {
-
+	constructor(pos) {
+		super(pos, new Vector(2, 0));
 	}
 }
 
@@ -481,8 +489,8 @@ class VerticalFireball extends Fireball {
 	// Конструктор должен принимать один аргумент: координаты текущего положения, _объект_ `Vector`. И создавать объект размером `1:1` и скоростью, 
 	// равной `2` по оси Y.
 
-	constructor() {
-
+	constructor(pos) {
+		super(pos, new Vector(0, 2));
 	}
 }
 
@@ -497,8 +505,13 @@ class FireRain extends Fireball {
 	// Конструктор должен принимать один аргумент — координаты текущего положения, _объект_ `Vector`. И создавать объект размером `1:1` и скоростью, 
 	// равной `3` по оси Y.
 
-	constructor() {
+	constructor(pos) {
+		super(pos, new Vector(0,3));
+		this.startPosition = pos;
+	}
 
+	handleObstacle() {
+		this.pos = this.startPosition;
 	}
 }
 
@@ -578,76 +591,20 @@ class Player {
 	}
 }
 
-	const grid = [
-	  [undefined, undefined],
-	  ['wall', 'wall']
-	];
 
-	function MyCoin(title) {
-	  this.type = 'coin';
-	  this.title = title;
-	}
-	MyCoin.prototype = Object.create(Actor);
-	MyCoin.constructor = MyCoin;
-
-	const goldCoin = new MyCoin('Золото');
-	const bronzeCoin = new MyCoin('Бронза');
-	const player = new Actor();
-	const fireball = new Actor();
-
-	const level = new Level(grid, [ goldCoin, bronzeCoin, player, fireball ]);
-
-	level.playerTouched('coin', goldCoin);
-	level.playerTouched('coin', bronzeCoin);
-
-	if (level.noMoreActors('coin')) {
-	  console.log('Все монеты собраны');
-	  console.log(`Статус игры: ${level.status}`);
-	}
-
-	const obstacle = level.obstacleAt(new Vector(1, 1), player.size);
-	if (obstacle) {
-	  console.log(`На пути препятствие: ${obstacle}`);
-	}
-
-	const otherActor = level.actorAt(player);
-	if (otherActor === fireball) {
-	  console.log('Пользователь столкнулся с шаровой молнией');
-	}
-
-/*
-	#### Пример использования LevelParser
-
-	```javascript
-	const plan = [
-	  ' @ ',
-	  'x!x'
-	];
-
-	const actorsDict = Object.create(null);
-	actorsDict['@'] = Actor;
-
-	const parser = new LevelParser(actorsDict);
-	const level = parser.parse(plan);
-
-	level.grid.forEach((line, y) => {
-	  line.forEach((cell, x) => console.log(`(${x}:${y}) ${cell}`));
-	});
-
-	level.actors.forEach(actor => console.log(`(${actor.pos.x}:${actor.pos.y}) ${actor.type}`));
-	```
-
-	Результат выполнения кода:
-	```
-	(0:0) undefined
-	(1:0) undefined
-	(2:0) undefined
-	(0:1) wall
-	(1:1) lava
-	(2:1) wall
-	(1:0) actor
-	```
-*/
+const schema = [
+    '   v xxxx',
+    'x      | ',
+    'x    =   ',
+    'x        ',
+    '     !xxx',
+    '         ',
+    'xxx!     ',
+    '         '
+  ];
+  const parser = new LevelParser();
+  const level = parser.parse(schema);
+  runLevel(level, DOMDisplay);
 
 /*
 	#### Пример использования
