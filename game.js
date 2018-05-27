@@ -449,7 +449,7 @@ class Fireball extends Actor {
 	//   Меняет вектор скорости на противоположный. Если он был `5:5`, то после должен стать `-5:-5`.
 
 	handleObstacle() {
-		this.speed = new Vector(Number('-' + this.speed.x), Number('-' + this.speed.y));
+		this.speed = new Vector(Number(-1 * this.speed.x), Number(-1 * this.speed.y));
 	}
 
 	// Метод `act`:
@@ -612,22 +612,42 @@ class Player extends Actor {
 	}
 }
 
-const schema = [
-    'v        ',
-    '         ',
-    '      =  ',
-    '        o',
-    '     !xxx',
-    ' @       ',
-    'xxx!     ',
-    '         '
-  ];
-  const actorDict = {
-    '@': Player,
-    '=': HorizontalFireball,
-    'v': VerticalFireball,
-    'o': Coin
-  }
-  const parser = new LevelParser(actorDict);
-  const level = parser.parse(schema);
-  runLevel(level, DOMDisplay);
+
+// const schemas = [
+//   [
+//   	'           v              v                   v           ',
+//     '                                                          ',
+//     '              o                                           ',
+//     '          x  xxx            =                           o ',
+//     '    =     x                 x          =          xxxxxx  ',
+//     '       o  x                 x       xxxxxx        x       ',
+//     '     !xxxxx           xxxx  x o                   x       ',
+//     ' @                          xxxxx              xxxx       ',
+//     'xxx!     o       xxxx             =    o                  ',
+//     '         xxxxx                        xxxx                '
+//   ]
+// ];
+
+
+const actorDict = {
+  '@': Player,
+  'v': FireRain,
+  '=': HorizontalFireball,
+  '|': VerticalFireball,
+  'o': Coin
+}
+
+const parser = new LevelParser(actorDict);
+
+loadLevels()
+	.then(sch => {
+		runGame(JSON.parse(sch), parser, DOMDisplay)
+			.then(() => alert('Вы выиграли приз!'));
+	});
+
+
+// loadLevels()
+// 	.then(sch => {
+// 		runGame(schemas, parser, DOMDisplay)
+// 			.then(() => alert('Вы выиграли приз!'));
+// 	});
