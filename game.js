@@ -318,7 +318,13 @@ class LevelParser {
 	//   с таким символом, вернет `undefined`.
 
 	actorFromSymbol(symbol) {
-		return symbol === undefined ? undefined : this.mapActors[symbol];
+		if (symbol === undefined) {
+			return undefined;
+		} else if (symbol in this.mapActors) {
+			return this.mapActors[symbol];
+		} else {
+			return undefined;
+		}
 	}
 
 	// Метод `obstacleFromSymbol`:
@@ -383,12 +389,12 @@ class LevelParser {
 					let s = plan[y][x];
 
 					if (this.mapActors) {
-						if (s in this.mapActors) {
-							if (typeof this.mapActors[s] === 'function') {
-								let obj = new this.mapActors[s](new Vector(x, y));
-								if (obj instanceof Actor) {
-									actors.push(obj);
-								}
+						let objConstructor = this.actorFromSymbol(s);
+						if (typeof objConstructor === 'function') {
+							let obj = new objConstructor(new Vector(x,y));
+							
+							if (obj instanceof Actor) {
+								actors.push(obj);
 							}
 						}
 					}
@@ -533,8 +539,17 @@ class Coin extends Actor {
 	//   * Радиус подпрыгивания, `springDist`, равен `0.07`;
 	//   * Фаза подпрыгивания, `spring`, случайное число от `0` до `2π`.
 
-	constructor() {
+	constructor(pos) {
+		super(pos, new Vector(0.6, 0.6));
+		this.spring = Math.random() * Math.PI * 2;
+		this.springSpeed = 8;
+		this.springDist = 0.07;
+		this.pos = this.pos.plus(new Vector(0.2, 0.1));
+		this.basicPos = this.pos;
+	}
 
+	get type() {
+		return 'coin';
 	}
 
 	// Метод `updateSpring`:
@@ -542,8 +557,8 @@ class Coin extends Actor {
 	//   Принимает один аргумент — время, _число_, по умолчанию `1`.
 	//   Ничего не возвращает. Обновляет текущую фазу `spring`, увеличив её на скорость `springSpeed`, умноженную на время.
 
-	updateSpring() {
-
+	updateSpring(time = 1) {
+		this.spring = this.spring + this.springSpeed * time;
 	}
 
 	// Метод `getSpringVector`:
@@ -552,7 +567,7 @@ class Coin extends Actor {
 	//   Координата Y вектора равна синусу текущей фазы, умноженному на радиус.
 
 	getSpringVector() {
-
+		return new Vector(0, Math.sin(this.spring) * this.springDist);
 	}
 
 	// Метод `getNextPosition`:
@@ -561,15 +576,16 @@ class Coin extends Actor {
 	//   Новый вектор равен базовому вектору положения, увеличенному на вектор подпрыгивания. Увеличивать нужно именно базовый вектор 
 	//   положения, который получен в конструкторе, а не текущий.
 
-	getNextPosition() {
-
+	getNextPosition(time = 1) {
+		this.updateSpring(time);
+		return this.basicPos.plus(this.getSpringVector());
 	}
 
 	// Метод `act`:
 	//   Принимает один аргумент — время. Получает новую позицию объекта и задает её как текущую. Ничего не возвращает.
 
-	act() {
-
+	act(time) {
+		this.pos = this.getNextPosition(time);
 	}
 }
 
@@ -579,53 +595,39 @@ class Coin extends Actor {
  *																																						*
  ********************************************************************************************************************************************************/
 
-class Player {
+class Player extends Actor {
 	// Конструктор:
 	//   Принимает один аргумент — координаты положения на игровом поле, _объект_ `Vector`.
 	//   Созданный объект, реальное положение которого отличается от того, что передано в конструктор, на вектор `0:-0,5`. Имеет размер `0,8:1,5`. И скорость `0:0`.
 	// Свойства:
 	//   Имеет свойство `type`, равное `player`.
 
-	constructor() {
+	constructor(pos) {
+		super(pos, new Vector(0.8, 1.5));
+		this.pos = this.pos.plus(new Vector(0, -0.5));
+	}
 
+	get type() {
+		return 'player';
 	}
 }
 
-
 const schema = [
-    '   v xxxx',
-    'x      | ',
-    'x    =   ',
-    'x        ',
-    '     !xxx',
+    'v        ',
     '         ',
+    '      =  ',
+    '        o',
+    '     !xxx',
+    ' @       ',
     'xxx!     ',
     '         '
   ];
-  const parser = new LevelParser();
+  const actorDict = {
+    '@': Player,
+    '=': HorizontalFireball,
+    'v': VerticalFireball,
+    'o': Coin
+  }
+  const parser = new LevelParser(actorDict);
   const level = parser.parse(schema);
   runLevel(level, DOMDisplay);
-
-/*
-	#### Пример использования
-
-	```javascript
-	const time = 5;
-	const speed = new Vector(1, 0);
-	const position = new Vector(5, 5);
-
-	const ball = new Fireball(position, speed);
-
-	const nextPosition = ball.getNextPosition(time);
-	console.log(`Новая позиция: ${nextPosition.x}: ${nextPosition.y}`);
-
-	ball.handleObstacle();
-	console.log(`Текущая скорость: ${ball.speed.x}: ${ball.speed.y}`);
-	```
-
-	Результат работы кода:
-	```
-	Новая позиция: 10: 5
-	Текущая скорость: -1: 0
-	```
-*/
