@@ -2,10 +2,6 @@ hidden {
   display: none;
 }
 
-body {
-  background-color: rgb(20, 120, 200);
-}
-
 .background {
   background: rgb(52, 166, 251);
   table-layout: fixed;
@@ -49,7 +45,7 @@ body {
 }
 
 .won .player {
-  box-shadow: -7px -10px 11px gold, 7px -10px 11px gold;
+  box-shadow: -4px -7px 8px gold, 4px -7px 8px gold;
 }
 
 .game {
