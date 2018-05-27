@@ -2,6 +2,10 @@ hidden {
   display: none;
 }
 
+body {
+    background-color: rgb(20, 120, 220);
+}
+
 .background {
   background: rgb(52, 166, 251);
   table-layout: fixed;
