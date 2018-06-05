@@ -283,10 +283,8 @@ class Level {
 			} else if (barrier === 'coin' && actor.type === 'coin') {
 				this.removeActor(actor);
 
-				this.actors.some(item => {
-					if (item.type === 'coin') {
-						return true;
-					}
+				const find = this.actors.some(item => {
+					return item.type === 'coin';
 				});
 
 				if (find === false) {
